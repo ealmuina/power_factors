@@ -1,0 +1,35 @@
+services:
+  backend:
+    env_file:
+      - variables.env
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: sh scripts/run_backend.sh
+  monitoring:
+    image: 3megawatt/dev-recruiting-challenge-monitor
+  redis:
+    image: redis
+  celery:
+    env_file:
+      - variables.env
+    build:
+      context: .
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+    command: celery -A power_factors worker -l info
+  celery-beat:
+    env_file:
+      - variables.env
+    build:
+      context: .
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+    command: celery -A power_factors beat -l info

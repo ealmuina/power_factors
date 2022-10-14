@@ -6,10 +6,10 @@ WORKDIR /app
 # Install requirements
 RUN pip install -r requirements.txt
 
-# migrate db, so we have the latest db schema
-RUN python manage.py migrate
+# Run as a non root user
+RUN useradd -ms /bin/bash power_factors
+RUN chown -R power_factors:power_factors /app
+USER power_factors
 
-EXPOSE 5000
-
-# start development server on public ip interface, on port 5000
-CMD python manage.py runserver 0.0.0.0:5000
+# Expose port for web server
+EXPOSE 8000
