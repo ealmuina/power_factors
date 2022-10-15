@@ -2,7 +2,7 @@ from django.db import models
 
 
 class Plant(models.Model):
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=256, unique=True)
 
 
 class Datapoint(models.Model):
