@@ -20,7 +20,7 @@ class PlantViewSet(viewsets.ModelViewSet):
         # Get and validate list of plant IDs
         plant_ids = parse_ids(
             model=Plant,
-            id_list=request.GET.getlist('plant_id[]', [])
+            id_list=request.GET.getlist('plant_ids', [])
         )
         # Get and validate dates
         date_from = parse_date(request.GET.get('from'), as_datetime=True)
@@ -32,6 +32,7 @@ class PlantViewSet(viewsets.ModelViewSet):
         if date_to:
             conditions['timestamp__lt'] = date_to
 
+        # Filter queryset by plant IDs and date ranges
         self.queryset = self.queryset.filter(
             id__in=plant_ids
         ).prefetch_related(

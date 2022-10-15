@@ -35,5 +35,5 @@ class DatapointImportSerializer(DatapointSerializer):
                 'irradiation_observed': data['observed']['irradiation'],
             }
         except:
-            raise ValidationError({"message": f"Unrecognized datapoint item"})
+            raise ValidationError({"message": "Unrecognized datapoint item"})
         return super().to_internal_value(result)

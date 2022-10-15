@@ -177,33 +177,5 @@ class PollPlantMonitoringData(app.Task):
             )
             cursor += datetime.timedelta(days=365)
 
-    def run_alternative(self, plant_id, date_from=None, date_to=None):
-        date_from = date_from or self._get_next_unregistered_date(plant_id)
-        date_to = date_to or timezone.now().date()
-
-        cursor = date_from
-        while cursor < date_to:
-            data = self._request_monitoring_data(
-                plant_id=plant_id,
-                date_from=cursor,
-                date_to=min(date_to, cursor + datetime.timedelta(days=365))
-            )
-            for item in data:
-                serializer = DatapointImportSerializer(data=item)
-                if serializer.is_valid():
-                    validated_data = serializer.validated_data
-                    Datapoint.objects.get_or_create(
-                        plant_id=plant_id,
-                        timestamp=validated_data.pop('timestamp'),
-                        defaults=validated_data
-                    )
-                else:
-                    logging.error({
-                        'message': 'Unable to store invalid datapoint',
-                        'item': item,
-                        'errors': serializer.errors
-                    })
-            cursor += datetime.timedelta(days=365)
-
 
 PollPlantMonitoringData = app.register_task(PollPlantMonitoringData())

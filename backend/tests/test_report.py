@@ -60,7 +60,7 @@ class ReportTestCase(TestCase):
         response = self.client.get(
             '/plants/report/',
             data={
-                'plant_id[]': [self.existent_plant.id]
+                'plant_ids': [self.existent_plant.id]
             }
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -72,7 +72,7 @@ class ReportTestCase(TestCase):
         response = self.client.get(
             '/plants/report/',
             data={
-                'plant_id[]': [self.existent_plant.id, 2]
+                'plant_ids': [self.existent_plant.id, 2]
             }
         )
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
