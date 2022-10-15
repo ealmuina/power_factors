@@ -1,7 +1,7 @@
 import datetime
-import json
 import logging
 from http import HTTPStatus
+from typing import List, Tuple, Optional
 
 import pytz
 import requests
@@ -15,11 +15,17 @@ from power_factors.celery import app
 
 @app.task(ignore_result=True)
 def poll_monitoring_data():
+    """
+    Launch a polling task for each Plant.
+    """
     for plant_id in Plant.objects.all().values_list('id', flat=True):
         PollPlantMonitoringData.delay(plant_id)
 
 
 class PollPlantMonitoringData(app.Task):
+    """
+    Polling task for a given Plant.
+    """
     ignore_result = True
     serializer = 'pickle'
 
@@ -30,7 +36,12 @@ class PollPlantMonitoringData(app.Task):
     )
     MAX_POLLING_ATTEMPTS = 3
 
-    def _get_next_unregistered_date(self, plant_id):
+    def _get_next_unregistered_date(self, plant_id) -> datetime.date:
+        """
+        Get the next date for which there are no Datapoints registered for a given Plant.
+        :param plant_id: Plant ID
+        :return: Next date with unregistered Datapoints
+        """
         last_timestamp = Datapoint.objects.filter(
             plant_id=plant_id
         ).order_by(
@@ -40,7 +51,20 @@ class PollPlantMonitoringData(app.Task):
         last_timestamp = last_timestamp or self.DEFAULT_POLLING_FROM_DATE
         return last_timestamp.date() + datetime.timedelta(days=1)
 
-    def _request_monitoring_data(self, plant_id, date_from, date_to):
+    def _request_monitoring_data(
+            self,
+            plant_id,
+            date_from: datetime.date,
+            date_to: datetime.date
+    ) -> List[dict]:
+        """
+        Make a request to the monitoring service.
+        :param plant_id: Plant ID
+        :param date_from: Start date
+        :param date_to: End date
+        :return: Monitoring service response
+        """
+        # Make request up to MAX_POLLING_ATTEMPTS times
         attempts = 0
         while attempts < self.MAX_POLLING_ATTEMPTS:
             attempts += 1
@@ -52,6 +76,7 @@ class PollPlantMonitoringData(app.Task):
                     'to': date_to
                 }
             )
+            # Check if response is correct
             if response.status_code == HTTPStatus.OK:
                 data = response.json()
                 if isinstance(data, list):
@@ -59,22 +84,36 @@ class PollPlantMonitoringData(app.Task):
         return []
 
     @staticmethod
-    def _parse_datapoints(data):
+    def _parse_datapoints(data: List[dict]) -> List[dict]:
+        """
+        Parse a list of datapoints received from the monitoring service.
+        :param data: List of datapoints.
+        :return: Valid datapoints list, parsed to match the Datapoint model schema
+        """
         valid_datapoints = []
         for item in data:
             serializer = DatapointImportSerializer(data=item)
             if serializer.is_valid():
                 valid_datapoints.append(serializer.validated_data)
             else:
-                logging.error(json.dumps({
+                logging.error({
                     'message': 'Unable to store invalid datapoint',
                     'item': item,
                     'errors': serializer.errors
-                }))
+                })
         return valid_datapoints
 
     @staticmethod
-    def _split_datapoints(plant_id, data):
+    def _split_datapoints(plant_id, data: List[dict]) -> Tuple[List[Datapoint], List[Datapoint]]:
+        """
+        Split parsed datapoints in two lists: those to be created and updated respectively
+        :param plant_id: Plant ID
+        :param data: List of datapoints
+        :return: Tuple with two elements:
+            - datapoints to create: List of Datapoint instances ready for creation in DB.
+            - datapoints to update: List of Datapoint instances ready for updating in DB.
+        """
+        # Get Datapoints from DB that match the parsed list
         datapoints = Datapoint.objects.filter(
             plant_id=plant_id,
             timestamp__in=map(lambda dp: dp['timestamp'], data)
@@ -83,32 +122,53 @@ class PollPlantMonitoringData(app.Task):
             dp.timestamp: dp
             for dp in datapoints
         }
+
         datapoints_to_create, datapoints_to_update = [], []
         for item in data:
             dp = datapoints_by_timestamp.get(item['timestamp'])
             if dp:
+                # Found an item corresponding to the same plant and timestamp
+                # Update it!
                 for key, value in item.items():
                     setattr(dp, key, value)
                 datapoints_to_update.append(dp)
             else:
+                # No matching datapoint found
+                # Create a new one!
                 datapoints_to_create.append(Datapoint(
                     plant_id=plant_id,
                     **item
                 ))
+
         return datapoints_to_create, datapoints_to_update
 
-    def run(self, plant_id, date_from=None, date_to=None):
+    def run(
+            self,
+            plant_id,
+            date_from: Optional[datetime.date] = None,
+            date_to: Optional[datetime.date] = None
+    ):
+        """
+        Given a plant id and a dates range, pull datapoints from the monitoring service.
+        :param plant_id: Plant ID
+        :param date_from: Start date. Defaults to next date with no records yet.
+        :param date_to: End date. Defaults to today.
+        """
         date_from = date_from or self._get_next_unregistered_date(plant_id)
         date_to = date_to or timezone.now().date()
 
+        # Process data in batches of 1 year
         cursor = date_from
         while cursor < date_to:
+            # Get datapoints from monitoring service
             data = self._request_monitoring_data(
                 plant_id=plant_id,
                 date_from=cursor,
                 date_to=min(date_to, cursor + datetime.timedelta(days=365))
             )
+            # Parse datapoints
             valid_datapoints = self._parse_datapoints(data)
+            # Create or update as corresponds
             datapoints_to_create, datapoints_to_update = self._split_datapoints(plant_id, valid_datapoints)
             Datapoint.objects.bulk_create(datapoints_to_create)
             Datapoint.objects.bulk_update(

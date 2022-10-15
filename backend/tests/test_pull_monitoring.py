@@ -168,3 +168,11 @@ class PollMonitoringTestCase(TestCase):
                 }
             ]
         )
+
+    @patch('backend.tasks.requests.get')
+    def test_poll_empty_response(self, mock_get):
+        """Monitoring service returns empty response. No datapoints are created"""
+        mock_get.return_value.status_code = HTTPStatus.OK
+        mock_get.return_value.json.return_value = []
+        PollPlantMonitoringData(plant_id=self.existent_plant.id)
+        self.assertEqual(Datapoint.objects.count(), 0)
