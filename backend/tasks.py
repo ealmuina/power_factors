@@ -1,8 +1,11 @@
 import datetime
+import json
 import logging
 from http import HTTPStatus
 
+import pytz
 import requests
+from django.conf import settings
 from django.utils import timezone
 
 from backend.models import Plant, Datapoint
@@ -21,7 +24,10 @@ class PollPlantMonitoringData(app.Task):
     serializer = 'pickle'
 
     MONITORING_SERVICE_ADDRESS = 'http://monitoring:5000'
-    DEFAULT_POLLING_FROM_DATE = datetime.datetime(2022, 1, 1)
+    DEFAULT_POLLING_FROM_DATE = datetime.datetime(
+        2022, 1, 1,
+        tzinfo=pytz.timezone(settings.TIME_ZONE)
+    )
     MAX_POLLING_ATTEMPTS = 3
 
     def _get_next_unregistered_date(self, plant_id):
@@ -60,11 +66,11 @@ class PollPlantMonitoringData(app.Task):
             if serializer.is_valid():
                 valid_datapoints.append(serializer.validated_data)
             else:
-                logging.error({
+                logging.error(json.dumps({
                     'message': 'Unable to store invalid datapoint',
                     'item': item,
                     'errors': serializer.errors
-                })
+                }))
         return valid_datapoints
 
     @staticmethod

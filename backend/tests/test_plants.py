@@ -5,7 +5,7 @@ from django.test import TestCase
 from backend.models import Plant
 
 
-class PlantTestCase(TestCase):
+class PlantsTestCase(TestCase):
     def setUp(self):
         self.existent_plant = Plant.objects.create(
             name='existent-plant'

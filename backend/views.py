@@ -23,8 +23,8 @@ class PlantViewSet(viewsets.ModelViewSet):
             id_list=request.GET.getlist('plant_id[]', [])
         )
         # Get and validate dates
-        date_from = parse_date(request.GET.get('from'))
-        date_to = parse_date(request.GET.get('to'))
+        date_from = parse_date(request.GET.get('from'), as_datetime=True)
+        date_to = parse_date(request.GET.get('to'), as_datetime=True)
 
         conditions = {}
         if date_from:

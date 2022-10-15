@@ -1,7 +1,9 @@
 import datetime
-from typing import Union
+from typing import Optional, Union
 
 import arrow
+import pytz
+from django.conf import settings
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
@@ -24,13 +26,23 @@ def parse_ids(model, id_list: list) -> list:
     return id_list
 
 
-def parse_date(date_str: str) -> Union[datetime.date, None]:
+def parse_date(
+        date_str: Optional[str],
+        as_datetime: bool = False
+) -> Optional[Union[datetime.datetime, datetime.date]]:
     date = None
     if date_str:
         try:
-            date = arrow.get(date_str).date()
+            date = arrow.get(
+                date_str,
+                tzinfo=pytz.timezone(settings.TIME_ZONE)
+            ).datetime
         except:
             raise ValidationError(f"Invalid date: '{date_str}'.")
-        if date > timezone.now().date():
+        now = timezone.now()
+        if not as_datetime:
+            date = date.date()
+            now = now.date()
+        if date > now:
             raise ValidationError(f"Date '{date_str}' is from the future.")
     return date

@@ -14,7 +14,7 @@ class PlantSerializer(serializers.ModelSerializer):
 class DatapointSerializer(serializers.ModelSerializer):
     class Meta:
         model = Datapoint
-        exclude = ['plant']
+        exclude = ['id', 'plant']
 
 
 class PlantReportSerializer(PlantSerializer):
@@ -35,5 +35,5 @@ class DatapointImportSerializer(DatapointSerializer):
                 'irradiation_observed': data['observed']['irradiation'],
             }
         except:
-            raise ValidationError(f"Unrecognized datapoint item: '{data}'")
+            raise ValidationError({"message": f"Unrecognized datapoint item"})
         return super().to_internal_value(result)
