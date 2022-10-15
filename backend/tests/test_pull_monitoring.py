@@ -2,6 +2,8 @@ import datetime
 from http import HTTPStatus
 from unittest.mock import patch
 
+import pytz
+from django.conf import settings
 from django.test import TestCase
 
 from backend.models import Plant, Datapoint
@@ -130,7 +132,7 @@ class PollMonitoringTestCase(TestCase):
         """Datapoint downloaded already exists, so it gets updated"""
         Datapoint.objects.create(
             plant=self.existent_plant,
-            timestamp=datetime.datetime(2019, 1, 1, hour=1),
+            timestamp=datetime.datetime(2019, 1, 1, hour=1, tzinfo=pytz.timezone(settings.TIME_ZONE)),
             energy_expected=0,
             energy_observed=0,
             irradiation_expected=0,
