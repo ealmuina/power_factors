@@ -11,5 +11,5 @@ RUN useradd -ms /bin/bash power_factors
 RUN chown -R power_factors:power_factors /app
 USER power_factors
 
-# Expose port for web server
+# Expose port for backend server
 EXPOSE 8000
