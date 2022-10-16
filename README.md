@@ -24,6 +24,10 @@ Example response:
 }
 ````
 
+Status codes:
+
+- 200: Successful response
+
 ## POST `/plants/`
 
 Create a new plant.
@@ -40,6 +44,11 @@ Example request:
 }
 ````
 
+Status codes:
+
+- 201: Plant successfully created
+- 400: Incorrect plant data
+
 ## GET `/plants/<id>/`
 
 Return details for the given plant id.
@@ -53,6 +62,10 @@ Example response:
 }
 ````
 
+Status codes:
+
+- 200: Successful response
+
 ## PATCH `/plants/<id>/`
 
 Update details for the given plant id.
@@ -65,9 +78,20 @@ Example request:
 }
 ````
 
+Status codes:
+
+- 200: Plant successfully updated
+- 400: Incorrect plant data
+- 404: No plant found with the ID provided
+
 ## DELETE `/plants/<id>/`
 
 Delete the plant with the given id.
+
+Status codes:
+
+- 204: Plant successfully deleted
+- 404: No plant found with the ID provided
 
 ## POST `/plants/pull_datapoints/`
 
@@ -78,6 +102,11 @@ Parameters:
 - `plant_ids`: (Optional) List with plant IDs to pull datapoints for. Defaults to all plant IDs.
 - `from`: (Optional) Start date. Defaults to next date with no datapoints registered for each plant.
 - `to`: (Optional) End date. Defaults to today.
+
+Status codes:
+
+- 200: Successful response
+- 400: Incorrect filtering parameters
 
 ## GET `/plants/report/`
 
@@ -120,3 +149,8 @@ Example response:
   ]
 }
 ````
+
+Status codes:
+
+- 200: Successful response
+- 400: Incorrect filtering parameters
