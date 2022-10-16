@@ -2,11 +2,11 @@
 
 ## Comments
 
-- I know it is a terrible idea to commit a file with secret keys like in 'variables.env'. Normally I would store the values as project secrets in GitHub and have it add
+- I know it is a terrible idea to commit a file with secret keys as in `variables.env`. Normally I would store the values as project secrets in GitHub and have it add
   them as part as the deployment pipeline.
-- It would have been easier to use a `get_or_create` individually for each parsed datapoint in the pull task; but I wanted to do it better, which resulted in a more
+- It would have been easier to make a `get_or_create` call individually for each parsed datapoint in the pull task; but I wanted to do it better, which resulted in a more
   complex code. I ran it using both approaches and the difference was significant enough for me to make the harder code worth it (pulling 1 year of data took around 200
-  seconds vs 7 seconds respectively)
+  seconds vs 7 seconds respectively).
 - Tests for the different features requested can be found at `backend.tests`.
 - I have provided a `docker-compose.yml` file in order to make it easier to run this project.
 
